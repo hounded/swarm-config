@@ -1,0 +1,30 @@
+version: '3.2'
+ 
+services:
+  ubuntu:
+    image: ubuntu
+    volumes:
+      - type: volume
+        source: nfs
+        target: /nfs
+        volume:
+          nocopy: true
+      - type: volume 
+        source: crypto
+        target: /crypto
+        volume:
+          nocopy: true  
+    tty: true
+  
+volumes:
+   nfs:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.140.20.189,nolock,soft,rw"
+      device: ":/srv/NFS"           
+
+   crypto:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.140.20.189,nolock,soft,rw"
+      device: ":/srv/NFS/crypto-config"

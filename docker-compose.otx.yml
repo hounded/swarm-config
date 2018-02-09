@@ -1,0 +1,78 @@
+version: '3.2'
+
+networks:
+  net:
+    external:
+      name: net
+
+services:
+  ca:
+    image: hyperledger/fabric-ca:x86_64-1.0.4
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca
+#      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/org1.example.com-cert.pem
+#      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/a22daf356b2aab5792ea53e35f66fccef1d7f1aa2b3a2b92dbfbf96a448ea26a_sk
+    ports:
+      - 7054:7054
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.wgiplant.wgi.ap.mars-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/7f2df5c58e2a6886494e0dbf21e68d21188bd73493894aad9f6a238821bc6cbd_sk -b admin:adminpw -d'
+    volumes:
+      - type: volume
+        source: ca
+        target: /etc/hyperledger/fabric-ca-server-config
+        volume:
+          nocopy: true
+    networks:
+      net:
+        aliases:
+          - ca
+
+  orderer:
+    image: hyperledger/fabric-orderer:x86_64-1.0.4
+    environment:
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/composer-genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/msp/orderer/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    ports:
+      - 7050:7050
+    volumes:
+        - type: volume
+          source: orderer
+          target: /etc/hyperledger/msp/orderer/msp
+          volume:
+            nocopy: true
+        - type: volume
+          source: tx
+          target: /etc/hyperledger/configtx
+          volume:
+            nocopy: true
+
+    networks:
+      net:
+        aliases:
+          - orderer
+
+volumes:
+  ca:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.140.20.189,nolock,soft,rw"
+      device: ":/srv/NFS/crypto-config/peerOrganizations/wgiplant.wgi.ap.mars/ca/" 
+
+  orderer:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.140.20.189,nolock,soft,rw"
+      device: ":/srv/NFS/crypto-config/ordererOrganizations/wgiplant.wgi.ap.mars/orderers/orderer.wgiplant.wgi.ap.mars/msp/"  
+
+  tx:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.140.20.189,nolock,soft,rw"
+      device: ":/srv/NFS"  
+
